@@ -1,0 +1,1231 @@
+<title>SmartJourney Backend Walkthrough</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+:root{
+  --ground:#F6F8F7;
+  --surface:#FFFFFF;
+  --surface-2:#EEF2F1;
+  --ink:#141F1D;
+  --ink-2:#3A4A47;
+  --muted:#63736F;
+  --edge:#DCE3E1;
+  --edge-2:#C3CFCC;
+  --accent:#0F6B63;
+  --accent-soft:#DCEDEA;
+  --accent-ink:#0B4F49;
+  --ochre:#A2622A;
+  --ochre-soft:#F5E9DC;
+  --warn:#8A5A0B;
+  --warn-soft:#F8EEDA;
+  --crit:#9B3226;
+  --crit-soft:#F8E4E1;
+  --shadow:0 1px 2px rgba(20,31,29,.05), 0 8px 24px -16px rgba(20,31,29,.28);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0D1413;
+    --surface:#141D1C;
+    --surface-2:#1A2523;
+    --ink:#E6ECEA;
+    --ink-2:#C2CFCC;
+    --muted:#8FA29E;
+    --edge:#243230;
+    --edge-2:#33443F;
+    --accent:#4FB8AA;
+    --accent-soft:#12302D;
+    --accent-ink:#7FD3C7;
+    --ochre:#D28F52;
+    --ochre-soft:#2E2117;
+    --warn:#D8A85C;
+    --warn-soft:#2C2416;
+    --crit:#E08A7C;
+    --crit-soft:#2E1A17;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0D1413;
+  --surface:#141D1C;
+  --surface-2:#1A2523;
+  --ink:#E6ECEA;
+  --ink-2:#C2CFCC;
+  --muted:#8FA29E;
+  --edge:#243230;
+  --edge-2:#33443F;
+  --accent:#4FB8AA;
+  --accent-soft:#12302D;
+  --accent-ink:#7FD3C7;
+  --ochre:#D28F52;
+  --ochre-soft:#2E2117;
+  --warn:#D8A85C;
+  --warn-soft:#2C2416;
+  --crit:#E08A7C;
+  --crit-soft:#2E1A17;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:16px;
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px 120px}
+
+/* ---------- masthead ---------- */
+.mast{padding:76px 0 40px;border-bottom:1px solid var(--edge)}
+.eyebrow{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);font-weight:500;margin:0 0 20px;
+}
+h1{
+  font-family:"Newsreader",Georgia,serif;
+  font-weight:500;font-size:clamp(38px,6.2vw,68px);
+  line-height:1.03;letter-spacing:-.02em;margin:0;
+  text-wrap:balance;max-width:16ch;
+}
+h1 em{font-style:italic;color:var(--accent)}
+.dek{
+  margin:22px 0 0;max-width:62ch;font-size:19px;color:var(--ink-2);
+  line-height:1.6;
+}
+.mast-meta{
+  display:flex;flex-wrap:wrap;gap:10px;margin-top:30px;
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11.5px;
+}
+.chip{
+  border:1px solid var(--edge-2);border-radius:2px;padding:5px 10px;
+  color:var(--muted);background:var(--surface);
+}
+.chip b{color:var(--ink);font-weight:500}
+
+/* ---------- layout ---------- */
+.cols{display:grid;grid-template-columns:1fr;gap:0}
+@media (min-width:1000px){
+  .cols{grid-template-columns:198px minmax(0,1fr);gap:56px;align-items:start}
+  nav.toc{position:sticky;top:28px;padding-top:52px}
+}
+nav.toc{font-size:13px;padding-top:34px}
+nav.toc p{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 14px;
+}
+nav.toc a{
+  display:block;padding:5px 0;color:var(--ink-2);text-decoration:none;
+  border-left:2px solid transparent;padding-left:12px;margin-left:-2px;
+  transition:color .15s,border-color .15s;
+}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--accent);border-left-color:var(--accent)}
+
+main{min-width:0;padding-top:34px}
+
+/* ---------- sections ---------- */
+section{padding:44px 0;border-bottom:1px solid var(--edge)}
+section:last-of-type{border-bottom:0}
+h2{
+  font-family:"Newsreader",Georgia,serif;font-weight:500;
+  font-size:clamp(26px,3.4vw,34px);line-height:1.15;letter-spacing:-.015em;
+  margin:0 0 8px;text-wrap:balance;
+}
+h2 .num{
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12px;
+  color:var(--accent);vertical-align:5px;margin-right:12px;font-weight:500;
+}
+h3{
+  font-family:"Public Sans",sans-serif;font-weight:700;font-size:15px;
+  letter-spacing:.005em;margin:34px 0 10px;color:var(--ink);
+}
+.lede{color:var(--muted);margin:0 0 26px;max-width:66ch;font-size:16px}
+p{max-width:68ch;margin:0 0 16px}
+ul{max-width:68ch;margin:0 0 16px;padding-left:20px}
+li{margin-bottom:7px}
+li::marker{color:var(--edge-2)}
+strong{font-weight:600}
+a{color:var(--accent)}
+
+code,.f{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:.855em;
+}
+code{
+  background:var(--surface-2);border:1px solid var(--edge);
+  padding:1px 5px;border-radius:3px;color:var(--ink-2);
+  word-break:break-word;
+}
+.f{
+  color:var(--accent);background:var(--accent-soft);
+  border:1px solid transparent;padding:1px 6px;border-radius:3px;
+  font-weight:500;word-break:break-word;
+}
+/* ---------- numbered pipeline stages ---------- */
+.stage{
+  display:grid;grid-template-columns:44px minmax(0,1fr);gap:20px;
+  padding:26px 0;border-top:1px solid var(--edge);
+}
+.stage:first-of-type{border-top:1px solid var(--edge-2)}
+.stage-n{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:12px;font-weight:700;color:var(--accent);
+  padding-top:3px;font-variant-numeric:tabular-nums;
+}
+.stage-h{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:15px;font-weight:700;color:var(--ink);margin:0 0 3px;
+  letter-spacing:-.01em;
+}
+.stage-file{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:11.5px;color:var(--muted);margin:0 0 14px;word-break:break-all;
+}
+.stage-body>*:last-child{margin-bottom:0}
+
+/* ---------- callouts ---------- */
+.note{
+  border-left:3px solid var(--accent);background:var(--surface);
+  padding:14px 18px;margin:18px 0;max-width:68ch;border-radius:0 3px 3px 0;
+  box-shadow:var(--shadow);
+}
+.note.why{border-left-color:var(--ochre)}
+.note.bug{border-left-color:var(--crit)}
+.note p{margin:0;font-size:15px}
+.note p+p{margin-top:9px}
+.note .tag{
+  display:block;font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:6px;font-weight:500;
+}
+.note.why .tag{color:var(--ochre)}
+.note.bug .tag{color:var(--crit)}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:22px 0;border:1px solid var(--edge);border-radius:4px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:520px}
+th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--edge);vertical-align:top}
+th{
+  font-family:"JetBrains Mono",ui-monospace,monospace;
+  font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);font-weight:500;background:var(--surface-2);
+  white-space:nowrap;
+}
+tr:last-child td{border-bottom:0}
+td:first-child{white-space:nowrap}
+.tw.narrow table{min-width:400px}
+
+/* ---------- diagram ---------- */
+figure{margin:26px 0 10px}
+.figbox{
+  border:1px solid var(--edge);border-radius:4px;background:var(--surface);
+  padding:26px 18px;overflow-x:auto;box-shadow:var(--shadow);
+}
+figcaption{
+  font-size:13px;color:var(--muted);margin-top:12px;max-width:66ch;
+}
+svg{display:block;margin:0 auto;max-width:100%;height:auto}
+.n-label{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12.5px;font-weight:700}
+.n-role{font-family:"Public Sans",sans-serif;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase}
+.e-label{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px}
+
+/* ---------- key/legend ---------- */
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;margin:16px 0 0;font-size:13px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:7px}
+.sw{width:11px;height:11px;border-radius:2px;border:1px solid var(--edge-2);flex:none}
+
+/* ---------- flow strip ---------- */
+.flow{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:12.5px;
+  margin:18px 0;
+}
+.flow b{
+  background:var(--surface);border:1px solid var(--edge-2);
+  padding:5px 10px;border-radius:3px;font-weight:500;color:var(--ink);
+}
+.flow i{color:var(--edge-2);font-style:normal;font-size:14px}
+
+/* ---------- endnote ---------- */
+.endnote{
+  margin-top:60px;padding-top:26px;border-top:1px solid var(--edge);
+  font-size:13.5px;color:var(--muted);max-width:68ch;
+}
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <p class="eyebrow">Codebase walkthrough · ai-backend</p>
+    <h1>How a message becomes an <em>itinerary</em></h1>
+    <p class="dek">
+      An end-to-end trace of the SmartJourney AI backend — every file on the path from
+      an HTTP request to a day-by-day plan, plus the batch pipeline that fills the
+      database behind it, and the reason each piece is shaped the way it is.
+    </p>
+    <div class="mast-meta">
+      <span class="chip"><b>39</b> source modules</span>
+      <span class="chip"><b>~3,855</b> lines</span>
+      <span class="chip"><b>9</b> graph nodes</span>
+      <span class="chip"><b>2</b> LLM calls per request</span>
+      <span class="chip"><b>19</b> test files</span>
+    </div>
+  </header>
+
+  <div class="cols">
+
+    <nav class="toc" aria-label="Contents">
+      <p>Contents</p>
+      <a href="#map">Repository map</a>
+      <a href="#startup">Process startup</a>
+      <a href="#graph">The request graph</a>
+      <a href="#api">API layer</a>
+      <a href="#nodes">Nine nodes, in order</a>
+      <a href="#data">Data layer</a>
+      <a href="#rag">RAG subsystem</a>
+      <a href="#ingest">Batch ingestion</a>
+      <a href="#oauth">Google OAuth flow</a>
+      <a href="#admin">Admin endpoints</a>
+      <a href="#failopen">Fail-open contract</a>
+      <a href="#found">Two things to fix</a>
+    </nav>
+
+    <main>
+
+      <!-- ================= MAP ================= -->
+      <section id="map">
+        <h2><span class="num">01</span>Repository map</h2>
+        <p class="lede">Four top-level directories were planned. Only one contains working code today.</p>
+
+        <div class="tw">
+          <table>
+            <thead>
+              <tr><th>Directory</th><th>State</th><th>What it holds</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="f">ai-backend/</span></td>
+                <td><strong>Active</strong></td>
+                <td>The entire working system — FastAPI app, LangGraph orchestrator, agents, tools, RAG, ingestion jobs, tests.</td>
+              </tr>
+              <tr>
+                <td><span class="f">backend/</span></td>
+                <td>Planned</td>
+                <td>Only <span class="f">docker-compose.yml</span> (a <code>postgis/postgis:16-3.4</code> service) and two design docs. The NestJS service that will own the Prisma schema does not exist yet.</td>
+              </tr>
+              <tr>
+                <td><span class="f">frontend-web/</span></td>
+                <td>Empty</td>
+                <td>Reserved for the Next.js client.</td>
+              </tr>
+              <tr>
+                <td><span class="f">frontend-mobile/</span></td>
+                <td>Empty</td>
+                <td>Reserved for the Flutter client.</td>
+              </tr>
+              <tr>
+                <td><span class="f">Documentation/</span></td>
+                <td>Reference</td>
+                <td>SRS, design document, feasibility report, proposal, schedule.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          The Postgres image is PostGIS specifically, not stock Postgres — the schema uses
+          <code>geography(Point,4326)</code> columns for <code>travel_listing.location</code> and
+          <code>traveler_profile.home_location</code>, which a plain Postgres image cannot create.
+        </p>
+      </section>
+
+      <!-- ================= STARTUP ================= -->
+      <section id="startup">
+        <h2><span class="num">02</span>Process startup</h2>
+        <p class="lede">
+          <span class="f">main.py</span> is the single entrypoint. It mounts two independent
+          workstreams onto one FastAPI app: the trip-planning orchestrator and the data/RAG track.
+        </p>
+
+        <div class="note why">
+          <span class="tag">Why the import order matters</span>
+          <p>
+            <code>load_dotenv()</code> runs at <span class="f">main.py:35</span>, before any
+            <code>app.*</code> import. <code>pydantic-settings</code> populates the
+            <code>Settings</code> object but never writes to <code>os.environ</code> — and
+            <code>langchain_google_genai</code> reads <code>GOOGLE_API_KEY</code> /
+            <code>GEMINI_API_KEY</code> straight out of <code>os.environ</code>. Without that
+            call first, the LLM fails at runtime even with a perfectly filled-in
+            <code>.env</code>.
+          </p>
+        </div>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>Line</th><th>Action</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td><code>35</code></td><td><code>load_dotenv()</code></td><td>Populates <code>os.environ</code> for libraries that bypass Settings</td></tr>
+              <tr><td><code>41–46</code></td><td>Import routers, <code>rag_service</code>, scheduler, pool, ingest</td><td>Wires both tracks into one app</td></tr>
+              <tr><td><code>57–63</code></td><td><code>CORSMiddleware</code>, <code>allow_origins=["*"]</code></td><td>So the Flutter / Next.js clients can call it once they exist</td></tr>
+              <tr><td><code>65–66</code></td><td><code>include_router</code> × 2</td><td>Mounts <code>/trip-plan</code> and <code>/auth/google/*</code></td></tr>
+              <tr><td><code>130–135</code></td><td><code>startup_event → start_scheduler()</code></td><td>Begins the weekly / monthly refresh jobs</td></tr>
+              <tr><td><code>138–142</code></td><td><code>shutdown_event</code></td><td>Stops APScheduler, closes the asyncpg pool cleanly</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Configuration</h3>
+        <p>
+          <span class="f">app/config/settings.py</span> holds one <code>Settings</code> class read
+          by nearly every module. <strong>Every field defaults to <code>""</code> or a safe value on
+          purpose</strong> — importing the app on a fresh clone with no <code>.env</code> must never
+          raise <code>ValidationError</code>, so CI and a teammate's first checkout both work.
+          <code>llm_model</code> defaults to <code>gemini-3.6-flash</code> because 2.0-flash and
+          2.5-flash now 404 for newly issued keys.
+        </p>
+      </section>
+
+      <!-- ================= GRAPH ================= -->
+      <section id="graph">
+        <h2><span class="num">03</span>The request graph</h2>
+        <p class="lede">
+          <span class="f">app/core/orchestrator.py</span> builds a LangGraph <code>StateGraph</code>
+          and compiles it once at import time, so <code>orchestrator</code> is a module-level
+          singleton rather than rebuilt per request.
+        </p>
+
+        <figure>
+          <div class="figbox">
+            <svg viewBox="0 0 540 700" role="img" aria-label="Vertical flow of nine orchestrator nodes from validate to respond, with a shared escape rail carrying errors and clarification requests from the first three nodes directly to respond.">
+              <defs>
+                <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="var(--edge-2)"/>
+                </marker>
+                <marker id="ahd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="var(--ochre)"/>
+                </marker>
+              </defs>
+
+              <!-- main spine arrows -->
+              <g stroke="var(--edge-2)" stroke-width="1.5" marker-end="url(#ah)">
+                <line x1="120" y1="61" x2="120" y2="83"/>
+                <line x1="120" y1="129" x2="120" y2="151"/>
+                <line x1="120" y1="197" x2="120" y2="219"/>
+                <line x1="120" y1="265" x2="120" y2="287"/>
+                <line x1="120" y1="333" x2="120" y2="355"/>
+                <line x1="120" y1="401" x2="120" y2="423"/>
+                <line x1="120" y1="469" x2="120" y2="491"/>
+                <line x1="120" y1="537" x2="120" y2="559"/>
+                <line x1="120" y1="605" x2="120" y2="627"/>
+              </g>
+
+              <!-- escape rail -->
+              <g stroke="var(--ochre)" stroke-width="1.4" fill="none" stroke-dasharray="4 3">
+                <path d="M226 40 H420 V584"/>
+                <path d="M226 108 H420"/>
+                <path d="M226 176 H420"/>
+              </g>
+              <path d="M420 584 H232" stroke="var(--ochre)" stroke-width="1.4" fill="none" stroke-dasharray="4 3" marker-end="url(#ahd)"/>
+              <text class="e-label" x="428" y="300" fill="var(--ochre)" transform="rotate(90 428 300)" text-anchor="middle">errors · clarification_needed</text>
+
+              <!-- nodes -->
+              <g>
+                <!-- gate group -->
+                <rect x="16" y="19" width="210" height="42" rx="3" fill="var(--surface-2)" stroke="var(--edge-2)"/>
+                <text class="n-label" x="30" y="38" fill="var(--ink)">validate</text>
+                <text class="n-role" x="30" y="52" fill="var(--muted)">rule checks</text>
+
+                <rect x="16" y="87" width="210" height="42" rx="3" fill="var(--surface-2)" stroke="var(--edge-2)"/>
+                <text class="n-label" x="30" y="106" fill="var(--ink)">policy</text>
+                <text class="n-role" x="30" y="120" fill="var(--muted)">blocklist · pre-LLM</text>
+
+                <rect x="16" y="155" width="210" height="42" rx="3" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                <text class="n-label" x="30" y="174" fill="var(--accent-ink)">slot_fill</text>
+                <text class="n-role" x="30" y="188" fill="var(--accent)">LLM call 1 · gemini</text>
+
+                <!-- enrich group -->
+                <rect x="16" y="223" width="210" height="42" rx="3" fill="var(--surface)" stroke="var(--edge-2)"/>
+                <text class="n-label" x="30" y="242" fill="var(--ink)">location</text>
+                <text class="n-role" x="30" y="256" fill="var(--muted)">gps → ip → none</text>
+
+                <rect x="16" y="291" width="210" height="42" rx="3" fill="var(--surface)" stroke="var(--edge-2)"/>
+                <text class="n-label" x="30" y="310" fill="var(--ink)">calendar</text>
+                <text class="n-role" x="30" y="324" fill="var(--muted)">google freebusy</text>
+
+                <rect x="16" y="359" width="210" height="42" rx="3" fill="var(--surface)" stroke="var(--edge-2)"/>
+                <text class="n-label" x="30" y="378" fill="var(--ink)">context</text>
+                <text class="n-role" x="30" y="392" fill="var(--muted)">weather ∥ disaster</text>
+
+                <!-- llm group -->
+                <rect x="16" y="427" width="210" height="42" rx="3" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                <text class="n-label" x="30" y="446" fill="var(--accent-ink)">recommend</text>
+                <text class="n-role" x="30" y="460" fill="var(--accent)">LLM call 2 · rag + plan</text>
+
+                <rect x="16" y="495" width="210" height="42" rx="3" fill="var(--surface)" stroke="var(--edge-2)" stroke-dasharray="3 3"/>
+                <text class="n-label" x="30" y="514" fill="var(--muted)">plan</text>
+                <text class="n-role" x="30" y="528" fill="var(--muted)">usually a no-op</text>
+
+                <rect x="16" y="563" width="210" height="42" rx="3" fill="var(--surface-2)" stroke="var(--edge-2)"/>
+                <text class="n-label" x="30" y="582" fill="var(--ink)">respond</text>
+                <text class="n-role" x="30" y="596" fill="var(--muted)">hard vs soft errors</text>
+
+                <rect x="60" y="629" width="120" height="32" rx="16" fill="none" stroke="var(--edge-2)"/>
+                <text class="n-label" x="120" y="650" fill="var(--muted)" text-anchor="middle">END</text>
+              </g>
+            </svg>
+          </div>
+          <div class="legend">
+            <span><i class="sw" style="background:var(--accent-soft);border-color:var(--accent)"></i>LLM call</span>
+            <span><i class="sw" style="background:var(--surface-2)"></i>Gate / terminal</span>
+            <span><i class="sw" style="background:var(--surface)"></i>Enrichment (external API)</span>
+            <span><i class="sw" style="background:transparent;border-style:dashed"></i>Conditional fallback</span>
+          </div>
+          <figcaption>
+            The three conditional edges all merge onto one escape rail. A validation failure,
+            a policy block, or a missing destination each jumps straight to <code>respond</code>,
+            skipping every paid call downstream.
+          </figcaption>
+        </figure>
+
+        <p>
+          <span class="f">app/core/state.py</span> defines <code>TripState</code> — the single
+          Pydantic object threaded through all nine nodes. Every node mutates it in place and
+          appends its own name to <code>completed_steps</code>.
+        </p>
+        <ul>
+          <li><code>recommendations</code> (<span class="f">state.py:56</span>) has to be
+            <em>declared</em> even though only one agent writes it — Pydantic rejects assignment
+            to undeclared attributes, so <code>state.recommendations = [...]</code> would raise.</li>
+          <li><code>budget_notes</code> is kept separate from <code>final_response</code> so the
+            generic "here's your trip plan" summary can't silently clobber the LLM's budget
+            explanation.</li>
+        </ul>
+
+        <h3>Agent contract</h3>
+        <p>
+          <span class="f">app/core/base_agent.py</span> is an ABC forcing every agent to implement
+          <code>async execute(state) -&gt; AgentResult</code>.
+          <span class="f">app/core/result.py</span> defines that result
+          (<code>success</code>, <code>state</code>, <code>message</code>, <code>error</code>).
+        </p>
+        <div class="note why">
+          <span class="tag">Why nodes don't append result.message</span>
+          <p>
+            Agents mutate state in place <em>and</em> self-report failures into
+            <code>state.errors</code>. So <code>_recommend_node</code> and <code>_plan_node</code>
+            deliberately discard <code>result.message</code> — appending it too would list every
+            failure twice.
+          </p>
+        </div>
+      </section>
+
+      <!-- ================= API ================= -->
+      <section id="api">
+        <h2><span class="num">04</span>API layer</h2>
+        <p class="lede">
+          <span class="f">app/api/trip.py</span> — <code>POST /trip-plan</code>, the only
+          user-facing endpoint of the planner.
+        </p>
+
+        <div class="flow">
+          <b>request</b><i>→</i><b>resolve GPS/IP</b><i>→</i><b>load session</b><i>→</i><b>build TripState</b><i>→</i><b>run graph</b><i>→</i><b>save session</b><i>→</i><b>curated response</b>
+        </div>
+
+        <h3>Request shape</h3>
+        <ul>
+          <li>The field is named <code>message</code>, not <code>user_input</code>, to match the
+            published API contract — internally it becomes <code>TripState.user_input</code>,
+            because renaming it there would ripple through every agent file.</li>
+          <li><code>client_gps</code> is a nested <code>ClientGPS</code> model rather than a raw
+            dict, so FastAPI returns a clean 422 on malformed input instead of crashing, and it
+            renders correctly in the generated Swagger docs.</li>
+          <li><code>session_id</code> is omitted on the first message, then passed back to continue
+            modifying the same trip.</li>
+        </ul>
+
+        <div class="note why">
+          <span class="tag">Why location resolves here, not in the graph</span>
+          <p>
+            <span class="f">trip.py:69</span> calls <code>resolve_start_location()</code> before
+            invoking the graph, because only this layer can see the real HTTP request —
+            <code>TripState</code> carries no <code>client_ip</code> field by design. The
+            <code>location</code> node downstream is a fallback for direct callers (tests, scripts)
+            that never had an HTTP request to begin with.
+          </p>
+        </div>
+
+        <h3>Multi-turn continuity</h3>
+        <p>
+          <span class="f">trip.py:71–86</span> mints a UUID or reuses the client's,
+          <code>load_session()</code> restores the previous turn's fields and sets
+          <code>is_followup=True</code>. This turn's freshly-resolved <code>user_id</code> and GPS
+          always overwrite carried-over values — a new position fix beats a stale one.
+        </p>
+        <p>
+          <span class="f">app/utils/session_store.py</span> persists that to
+          <span class="f">trip_sessions.json</span>, keyed by session id.
+          <code>_CARRY_OVER_FIELDS</code> is an explicit allowlist:
+          <code>user_input</code>, <code>errors</code>, <code>clarification_needed</code>,
+          <code>completed_steps</code> and <code>final_response</code> are per-turn and deliberately
+          excluded. The file itself flags this as interim — it should move to the real
+          <code>chat_session</code> tables, arguably owned by NestJS since it already needs chat
+          history for the sidebar.
+        </p>
+
+        <h3>Response shape</h3>
+        <p>
+          <code>TripPlanResponse</code> exposes only a curated subset of <code>TripState</code>.
+          The <code>candidate_*</code> lists never leave the server, and
+          <code>completed_steps</code> is populated only when <code>settings.debug</code> is true —
+          internal state is never dumped straight out to a client.
+        </p>
+      </section>
+
+      <!-- ================= NODES ================= -->
+      <section id="nodes">
+        <h2><span class="num">05</span>Nine nodes, in order</h2>
+        <p class="lede">
+          Each node is a thin async wrapper in the orchestrator that delegates to a tool or agent
+          module and records its name.
+        </p>
+
+        <div class="stage">
+          <div class="stage-n">01</div>
+          <div class="stage-body">
+            <p class="stage-h">validate</p>
+            <p class="stage-file">app/utils/validators.py — validate_trip_state()</p>
+            <p>
+              Rule-based sanity checks, <strong>not a completeness check</strong>. Catches values
+              that are present but invalid: non-positive <code>duration_days</code> or
+              <code>budget</code>, <code>travelers &lt; 1</code>, and any date window where
+              <code>start_date &gt; end_date</code>. Missing fields are fine — slot-filling handles
+              those. Any error routes straight to <code>respond</code>.
+            </p>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">02</div>
+          <div class="stage-body">
+            <p class="stage-h">policy</p>
+            <p class="stage-file">app/utils/policy_guard.py — check_policy()</p>
+            <p>
+              A substring blocklist over <code>user_input</code>, positioned here so that
+              <strong>blocked requests cost nothing</strong> — it runs before any paid LLM call.
+              Entries are whole phrases, never bare words: <code>"gun"</code> alone would block
+              "gun museum", <code>"ivory"</code> would block "Ivory Coast", a real destination.
+            </p>
+            <div class="note why">
+              <span class="tag">A stated trade-off, not a stub</span>
+              <p>
+                The module's own docstring records that a substring blocklist is inherently
+                bypassable by paraphrase, misspelling, or translation. It stops the obvious case,
+                not a determined bad actor — accepted for this project's scope, with an LLM content
+                classifier named as the production replacement.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">03</div>
+          <div class="stage-body">
+            <p class="stage-h">slot_fill <span style="color:var(--accent);font-weight:500">· LLM call 1</span></p>
+            <p class="stage-file">app/utils/slot_filling.py — fill_slots()</p>
+            <p>
+              Gemini with <code>.with_structured_output(_ExtractedSlots)</code> at
+              <code>temperature=0</code>, extracting <code>destination</code>,
+              <code>duration_days</code>, <code>budget</code>, <code>travelers</code>,
+              <code>interests</code> and <code>origin_location</code>.
+            </p>
+            <p>
+              The system prompt hammers on <strong>never guessing</strong> — it explicitly forbids
+              defaulting <code>travelers</code> to 1 just because a trip is being discussed. A
+              missing value is the correct output when the user said nothing about that field.
+            </p>
+            <p><strong>Two modes:</strong></p>
+            <ul>
+              <li><em>First turn</em> — only fills fields that are still <code>None</code>.</li>
+              <li><em>Follow-up</em> (<code>is_followup=True</code>) — extracted values
+                <strong>overwrite</strong>, because "make it cheaper" must actually change
+                <code>state.budget</code> rather than being ignored on the grounds that budget was
+                already set. Defaulting, profile lookup and clarification are skipped entirely.</li>
+            </ul>
+            <p>
+              If GPS and IP both failed but the traveler said "I'm starting from Polonnaruwa", the
+              origin is geocoded via <span class="f">geocode_tool.py</span> and stored with
+              <code>source: "text"</code>. GPS always wins when present — it's more precise than
+              geocoding a place name.
+            </p>
+            <p>
+              Then: destination-only requests default to <code>duration_days = 1</code>;
+              <code>db_tool.get_user_profile()</code> backfills interests, travel style and budget;
+              and if there is still no destination, <code>clarification_needed</code> is set and the
+              graph jumps to <code>respond</code>. The whole body is wrapped in try/except — it
+              appends to <code>state.errors</code> and never raises.
+            </p>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">04</div>
+          <div class="stage-body">
+            <p class="stage-h">location</p>
+            <p class="stage-file">app/tools/location_tool.py — resolve_start_location()</p>
+            <p>
+              Early-returns when the API layer already resolved it, which is the normal HTTP path.
+              Priority: GPS from the client → IP geolocation → <code>None</code>, which appends the
+              <strong>soft</strong> error <code>location_unresolved:</code>.
+            </p>
+            <div class="note why">
+              <span class="tag">Why ip-api.com and not ipapi.co</span>
+              <p>
+                ipapi.co's unkeyed free tier returned HTTP 429 during testing (~1,000 requests/day).
+                ip-api.com needs no signup and allows 45 requests/minute. The recorded trade-offs:
+                plain HTTP only on the free tier, and a per-minute cap that a burst of concurrent
+                demo testers could still trip.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">05</div>
+          <div class="stage-body">
+            <p class="stage-h">calendar</p>
+            <p class="stage-file">app/tools/calendar_tool.py — get_free_days(user_id, 30)</p>
+            <p>Runs only when <code>state.user_id</code> is set. Four steps:</p>
+            <ul>
+              <li>Read stored credentials from the <code>google_oauth_tokens</code> table.</li>
+              <li>Refresh the OAuth token if expired, and re-save it.</li>
+              <li><code>service.freebusy().query()</code> over the next 30 days, collecting every busy date.</li>
+              <li>Invert to free days, then <code>_group_into_ranges()</code> collapses them into
+                contiguous <code>{start_date, end_date}</code> windows.</li>
+            </ul>
+            <div class="note why">
+              <span class="tag">Why a DB hit that finds nothing returns None</span>
+              <p>
+                At <span class="f">calendar_tool.py:91–96</span>: if the database is reachable and
+                returns no row, the function returns <code>None</code> instead of falling through to
+                the local JSON file. Falling through could <strong>resurrect a token the user
+                deliberately disconnected</strong>. The file store is a fallback for "no database",
+                never for "the database said no".
+              </p>
+            </div>
+            <p>
+              The whole query is wrapped in a bare <code>except: return []</code> — a calendar
+              failure must never block the graph.
+            </p>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">06</div>
+          <div class="stage-body">
+            <p class="stage-h">context</p>
+            <p class="stage-file">geocode_tool.py · weather_tool.py · disaster_tool.py</p>
+            <p>
+              First, <span class="f">geocode_tool.py</span> resolves the destination through
+              Nominatim (free, keyless), with the query biased by appending
+              <code>", Sri Lanka"</code>. On any failure it returns <code>None</code> and the node
+              degrades rather than guessing coordinates.
+            </p>
+            <p>
+              Dates come from the calendar windows if present, otherwise today +
+              <code>duration_days</code>. Weather and disaster then run <strong>concurrently</strong>
+              under <code>asyncio.gather()</code>.
+            </p>
+
+            <h3 style="margin-top:22px">Weather</h3>
+            <p>
+              OpenWeather current conditions plus the 5-day/3-hour forecast, reduced per day to
+              min/max temperature, the modal condition, and peak precipitation probability. Cached
+              45 minutes.
+            </p>
+            <div class="note why">
+              <span class="tag">A timezone bug avoided on purpose</span>
+              <p>
+                <span class="f">weather_tool.py:68–71</span> groups forecast slices by
+                <code>dt_txt</code> — the UTC date string OpenWeather already provides — instead of
+                <code>fromtimestamp()</code>, which applies the <em>server's</em> local timezone and
+                would silently shift or drop forecast days depending on where the service is
+                deployed.
+              </p>
+            </div>
+
+            <h3>Disaster</h3>
+            <p>
+              Three sources fan out concurrently: NASA EONET, USGS earthquakes (M ≥ 4 in the last
+              seven days), and the GDACS RSS feed. Each filters by haversine distance within 300 km
+              and maps its categories onto a red / orange / green severity rank. Cached one hour.
+            </p>
+            <div class="note why">
+              <span class="tag">Failure and emptiness are different answers</span>
+              <p>
+                Each fetcher returns <code>None</code> on failure but <code>[]</code> on a
+                confirmed-empty result. Only when <strong>all three</strong> fail does the tool emit
+                <code>note: "disaster data unavailable"</code> — otherwise a total outage would be
+                reported as a confident, and possibly wrong, "safe".
+              </p>
+            </div>
+            <p>
+              Both tools sit on <span class="f">app/utils/cache.py</span>, a thin async Redis
+              wrapper that <strong>fails open</strong>: with no Redis, every call is a cache miss,
+              never an exception.
+            </p>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">07</div>
+          <div class="stage-body">
+            <p class="stage-h">recommend <span style="color:var(--accent);font-weight:500">· LLM call 2</span></p>
+            <p class="stage-file">app/workflows/recommendation_agent.py</p>
+            <p>
+              The heart of the system. It does recommendation <em>and</em> planning in a single
+              call — merged deliberately to cut three LLM calls per request down to two, on the
+              grounds that planning needs no data recommendation hasn't already gathered.
+            </p>
+            <div class="flow">
+              <b>db_tool</b><i>→</i><b>index into RAG</b><i>→</i><b>retrieve top-6</b><i>→</i><b>build payload</b><i>→</i><b>gemini</b><i>→</i><b>parse</b><i>→</i><b>state</b>
+            </div>
+            <ol style="max-width:68ch;padding-left:20px">
+              <li>Fetch candidate hotels, restaurants, attractions and events from
+                <span class="f">db_tool</span>; bail with an error if all three listing categories
+                are empty.</li>
+              <li>Index that pool into the RAG store under four categories.</li>
+              <li>Build a query from <code>interests + travel_style</code>, falling back to the
+                destination name, and retrieve the top 6 per category —
+                <code>_retrieve_or_fallback()</code> reverts to the unfiltered list if retrieval
+                scores nothing.</li>
+              <li>Assemble the payload: candidates, <code>weather_forecast</code>,
+                <code>disaster_warnings</code>, and <code>traveler_request</code>.</li>
+              <li>On a follow-up, attach <code>previous_itinerary</code> and
+                <code>modification_request</code> so the model refines rather than rebuilds.</li>
+              <li>Parse, then write <code>hotels</code>, <code>restaurants</code>,
+                <code>attractions</code>, <code>events</code>, the flat category-tagged
+                <code>recommendations</code> list, <code>itinerary</code>,
+                <code>estimated_cost</code> and <code>budget_notes</code>.</li>
+            </ol>
+            <div class="note why">
+              <span class="tag">Why the raw message is sent every time</span>
+              <p>
+                <span class="f">recommendation_agent.py:108</span> passes
+                <code>traveler_request</code> — the user's verbatim words — alongside the structured
+                fields. Slot-filling can't capture "vegetarian only", "no hiking, my knees are bad",
+                or a preference for a relaxed pace, because none of those map to a tag. The prompt
+                instructs the model to read it and account for it in each item's
+                <code>reason</code>.
+              </p>
+            </div>
+            <p>
+              <code>_parse_json_response()</code> strips markdown code fences and returns
+              <code>{}</code> on a parse failure — so every <code>.get(key, fallback)</code> below
+              it degrades to the pre-LLM candidate lists instead of returning nothing.
+            </p>
+            <p>
+              <span class="f">app/prompts/recommendation_planning_prompt.py</span> carries three
+              binding rules: never invent a place outside the candidate list; avoid outdoor-heavy
+              activities on days with severe weather or active disaster warnings; and
+              <strong>every itinerary item must copy <code>lat</code>/<code>lon</code> from the
+              candidate it represents</strong>, so the client can plot the route as map pins.
+            </p>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">08</div>
+          <div class="stage-body">
+            <p class="stage-h">plan</p>
+            <p class="stage-file">app/workflows/planning_agent.py · app/prompts/planning_prompt.py</p>
+            <p>
+              <strong>Usually a no-op.</strong> The node early-returns when
+              <code>state.itinerary</code> already exists, which it does on every normal run.
+              <code>PlanningAgent</code> is kept as a standalone fallback and for a future
+              "regenerate my itinerary" action that shouldn't re-run recommendation.
+            </p>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage-n">09</div>
+          <div class="stage-body">
+            <p class="stage-h">respond</p>
+            <p class="stage-file">app/core/orchestrator.py:140</p>
+            <p>
+              <code>clarification_needed</code> wins outright — if the graph needs to ask a
+              question, that question is the whole response.
+            </p>
+            <p>
+              Otherwise errors are split into <strong>hard</strong> and <strong>soft</strong> using
+              <code>_SOFT_ERROR_PREFIXES = ("location_unresolved",)</code>. Soft errors are appended
+              as a trailing "Note:" rather than being allowed to hide a perfectly good itinerary
+              behind a failure message. A hard error only takes over the response when there's no
+              itinerary to show.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= DATA ================= -->
+      <section id="data">
+        <h2><span class="num">06</span>Data layer</h2>
+        <p class="lede">
+          <span class="f">app/tools/db_tool.py</span> — every read is database-first with a mock
+          fallback, so the service runs standalone.
+        </p>
+
+        <div class="note why">
+          <span class="tag">Why raw SQL and not an ORM</span>
+          <p>
+            Prisma, in the planned NestJS backend, owns the schema. Defining models here as well
+            would duplicate that definition in a second language and let the two drift silently.
+            So this module holds parameterised SQL strings instead.
+          </p>
+        </div>
+
+        <ul>
+          <li><code>_SELECT_LISTINGS</code> is one JOIN across <code>travel_listing</code>,
+            <code>district</code> and <code>category</code>, selecting <code>latitude</code> and
+            <code>longitude</code> directly. Those are <strong>generated columns</strong> derived
+            from the PostGIS <code>location</code> geography — which is why this file no longer
+            decodes EWKB hex by hand, and why fetching listings is one round trip instead of three.</li>
+          <li><code>_coerce_date()</code> exists because the columns are <code>timestamptz</code>
+            and asyncpg refuses to coerce ISO strings the way the old Supabase REST layer did.
+            Callers keep passing plain strings.</li>
+          <li>Mock dictionaries cover Ella, Kandy, Colombo and Galle.
+            <code>_get_mock_data()</code> backfills <code>lat</code>/<code>lon</code> from district
+            centroids so mock and real rows share exactly one shape.</li>
+          <li><code>get_user_profile()</code> reads <code>traveler_profile</code>, using
+            <code>ST_Y</code>/<code>ST_X</code> for home coordinates — consumed by slot-filling's
+            defaulting logic.</li>
+        </ul>
+
+        <h3>Connection pooling</h3>
+        <p>
+          <span class="f">app/utils/db_pool.py</span> holds one lazily-created asyncpg pool per
+          process for the async request path. It returns <code>None</code> when the database is
+          unconfigured or unreachable.
+        </p>
+        <div class="note why">
+          <span class="tag">Why failure isn't latched</span>
+          <p>
+            The pool deliberately retries rather than permanently pinning the service to mock data
+            after one bad connect — a transient outage shouldn't degrade the service for the rest of
+            its life. A 5-second connect timeout bounds the retry cost. It also logs at
+            <code>debug</code> for "not configured" but <code>warning</code> for "configured but
+            unreachable", so the two situations don't look identical in the logs.
+          </p>
+        </div>
+
+        <h3>Shared geography</h3>
+        <p>
+          <span class="f">app/data/sri_lanka_districts.py</span> is the canonical list of all 25
+          districts: <code>name</code> (the human-facing key), <code>osm_name</code> (matching OSM's
+          <code>admin_level=5</code> area name), province, and an approximate centroid. Every
+          pipeline reads this one list rather than hardcoding its own partial set, and
+          <code>assert len(DISTRICTS) == 25</code> guards edits.
+        </p>
+      </section>
+
+      <!-- ================= RAG ================= -->
+      <section id="rag">
+        <h2><span class="num">07</span>RAG subsystem</h2>
+        <div class="flow">
+          <b>recommendation_agent</b><i>→</i><b>rag_service</b><i>→</i><b>retriever</b><i>→</i><b>vector_store</b><i>→</i><b>embeddings</b>
+        </div>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>Module</th><th>Role</th><th>Notable decision</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><span class="f">rag_service.py</span></td>
+                <td>Module-level singleton facade</td>
+                <td>Holds two things: a <code>Retriever</code> for per-category candidates, and a separate <code>VectorStore("knowledge_docs")</code> for guides and FAQs. Kept a plain sync class so async agents and sync scripts can both use it.</td>
+              </tr>
+              <tr>
+                <td><span class="f">retriever.py</span></td>
+                <td>One store per category</td>
+                <td><code>_item_text()</code> flattens name, description, tags, interests and destination into one searchable blob. <code>build_metadata()</code> stashes the original dict under <code>"raw"</code> so retrieval hands the agent back the <em>full</em> item, not just metadata.</td>
+              </tr>
+              <tr>
+                <td><span class="f">vector_store.py</span></td>
+                <td>FAISS, with a Python fallback</td>
+                <td><code>IndexFlatIP</code> over L2-normalised vectors, so inner product equals cosine. In-memory by design — the candidate pool is rebuilt per request, not persisted.</td>
+              </tr>
+              <tr>
+                <td><span class="f">embeddings.py</span></td>
+                <td>384-dim vectors</td>
+                <td><code>all-MiniLM-L6-v2</code>, lazily loaded once per process, falling back to a deterministic MD5 feature-hash into 384 bins.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note why">
+          <span class="tag">Two subtleties worth knowing</span>
+          <p>
+            <strong>FAISS is skipped when a filter is active.</strong> At
+            <span class="f">vector_store.py:112</span>, the FAISS path runs only when
+            <code>filter_fn is None</code> — FAISS can't apply a metadata predicate, so every
+            destination-filtered search silently takes the pure-Python cosine path instead.
+          </p>
+          <p>
+            <strong>The hash fallback isn't semantic.</strong> It's stable and correctly normalised
+            at the same dimension, so retrieval still <em>runs</em> without
+            sentence-transformers installed — but the rankings it produces are not meaningful. It
+            exists to keep the system importable, not to be a substitute.
+          </p>
+        </div>
+      </section>
+
+      <!-- ================= INGEST ================= -->
+      <section id="ingest">
+        <h2><span class="num">08</span>Batch ingestion</h2>
+        <p class="lede">
+          A second, entirely separate track: scheduled jobs that fill the database the request path
+          reads from.
+        </p>
+
+        <h3>Scheduling</h3>
+        <p>
+          <span class="f">app/scheduler.py</span> runs an APScheduler <code>AsyncIOScheduler</code>
+          on <code>Asia/Colombo</code>, started from <span class="f">main.py</span>.
+        </p>
+        <div class="tw narrow">
+          <table>
+            <thead><tr><th>Job</th><th>Cadence</th><th>Source</th></tr></thead>
+            <tbody>
+              <tr><td>Events</td><td>Weekly · Mon 02:00</td><td>Ticketmaster Discovery</td></tr>
+              <tr><td>Listings + prices</td><td>Monthly · 1st, 03:00</td><td>OSM Overpass + Booking.com</td></tr>
+              <tr><td>Weather</td><td><em>No job</em></td><td>Fetched live per request, Redis TTL</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          <code>_run_safely()</code> wraps each job so one failed run logs an exception instead of
+          killing the scheduler. The documented trade-off of running in-process: jobs only fire while
+          the server is up, so a restart at the exact scheduled minute skips that run — the next
+          week's or month's run still happens on schedule.
+        </p>
+
+        <h3>Listings — <span class="f">app/data/overpass_ingest.py</span></h3>
+        <ul>
+          <li>Per district, an Overpass QL query for <code>tourism=hotel</code>,
+            <code>amenity=restaurant</code>, <code>tourism=attraction</code> and
+            <code>historic</code>. 180-second server timeout, 200-second client timeout, one retry
+            after a 15-second sleep on HTTP 429, and a 10-second pause between districts.</li>
+          <li>A second query pulls bus, rail and transit stations. Each listing is haversine-matched
+            to the nearest stop within 1 km, setting <code>has_public_transit</code> and
+            <code>nearest_transit_stop</code>.</li>
+          <li>Booking.com via RapidAPI adds real nightly prices — <strong>one destination lookup and
+            one hotel search per district</strong>, not one call per hotel, which is what keeps it
+            inside the free tier. It prefers the Sri Lanka match with the most hotels, because
+            <code>searchDestination</code> returns same-named places worldwide. Matches are made
+            within 1 km and bucketed into <code>$</code> / <code>$$</code> / <code>$$$</code> /
+            <code>$$$$</code>.</li>
+          <li><code>has_column("travel_listing", "price_per_night")</code> gates the exact-price
+            columns, so the job works both before and after that migration lands.</li>
+          <li>Rows whose district or category can't be resolved are dropped and logged rather than
+            inserted broken.</li>
+        </ul>
+
+        <h3>Events — <span class="f">app/data/events_ingest.py</span></h3>
+        <p>
+          Ticketmaster Discovery, 50 km radius, 30-day lookahead, per district.
+        </p>
+        <div class="note why">
+          <span class="tag">Recorded in the module docstring</span>
+          <p>
+            <strong>Eventbrite was dropped as a source.</strong> Its public event <em>search</em>
+            endpoint was deprecated in 2019 — third-party apps can now only list events for their
+            own organisation, so it structurally cannot serve this use case, and
+            <code>/events/search/</code> returns 404 regardless of key validity.
+          </p>
+          <p>
+            Ticketmaster's key works but currently returns <strong>zero</strong> events for Sri Lanka
+            (checked at Colombo, Kandy and Galle at 100 km). The job is kept running in case that
+            changes, but real event coverage is expected to come from admin-entered events instead.
+          </p>
+        </div>
+
+        <h3>Writing — <span class="f">app/data/postgres_writer.py</span></h3>
+        <p>
+          The shared <strong>synchronous psycopg2</strong> writer. Sync rather than asyncpg because
+          these jobs run outside the FastAPI event loop, triggered by APScheduler or by hand.
+        </p>
+        <ul>
+          <li><code>get_district_id_map()</code> / <code>get_category_id_map()</code> — name to
+            foreign key.</li>
+          <li><code>to_point_wkt(lat, lon)</code> → <code>"POINT(lon lat)"</code> — note the
+            reversed order WKT requires.</li>
+          <li><code>has_column()</code> — a cached <code>information_schema</code> probe.</li>
+          <li><code>upsert_rows(..., geo_columns={"location"})</code> — wraps geography columns in
+            <code>ST_GeogFromText(%s)</code>. <strong>Postgres will not implicitly cast a string
+            into a geography column</strong>, so omitting a column from
+            <code>geo_columns</code> fails the whole insert.</li>
+        </ul>
+        <p>Every function no-ops cleanly when <code>DATABASE_URL</code> is blank, so ingestion can be run and tested without a database at all.</p>
+      </section>
+
+      <!-- ================= OAUTH ================= -->
+      <section id="oauth">
+        <h2><span class="num">09</span>Google OAuth flow</h2>
+        <p class="lede">
+          <span class="f">app/api/google_oauth.py</span> — a two-endpoint side flow whose only
+          consumer is the <code>calendar</code> node.
+        </p>
+
+        <div class="flow">
+          <b>GET /auth/google/login</b><i>→</i><b>sign user_id into state</b><i>→</i><b>Google consent</b><i>→</i><b>GET /callback</b><i>→</i><b>verify state</b><i>→</i><b>save_credentials</b>
+        </div>
+
+        <ul>
+          <li><strong>Login</strong> signs the <code>user_id</code> into the OAuth
+            <code>state</code> parameter with <code>itsdangerous</code>
+            (<code>URLSafeTimedSerializer</code>, salt <code>oauth-state</code>), then redirects to
+            Google with <code>access_type="offline"</code> and <code>prompt="consent"</code> —
+            both required to actually receive a <strong>refresh token</strong> rather than just a
+            short-lived access token.</li>
+          <li><strong>Callback</strong> calls <code>loads(state, max_age=600)</code>. A tampered or
+            more-than-ten-minutes-old state raises <code>BadSignature</code> or
+            <code>SignatureExpired</code> and returns HTTP 400.</li>
+          <li>It then exchanges the code and hands the credentials to
+            <code>calendar_tool.save_credentials()</code>, which upserts into
+            <code>google_oauth_tokens</code> — or writes the local JSON file when there's no
+            database.</li>
+        </ul>
+
+        <div class="note">
+          <span class="tag">What the signed state actually prevents</span>
+          <p>
+            Without it, anyone could call the callback with their own authorisation code and an
+            arbitrary <code>user_id</code>, binding <em>their</em> Google Calendar to
+            <em>someone else's</em> account. The signature makes the <code>user_id</code>
+            unforgeable, and the 10-minute window bounds replay.
+          </p>
+        </div>
+
+        <p>
+          The <code>google_oauth_tokens</code> table is the AI backend's alone to write — the
+          planned NestJS service does not touch it.
+        </p>
+      </section>
+
+      <!-- ================= ADMIN ================= -->
+      <section id="admin">
+        <h2><span class="num">10</span>Admin &amp; health endpoints</h2>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>Endpoint</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td><code>POST /trip-plan</code></td><td>The full orchestrator run. One turn of a planning conversation.</td></tr>
+              <tr><td><code>GET /auth/google/login</code></td><td>Starts the Calendar consent flow.</td></tr>
+              <tr><td><code>GET /auth/google/callback</code></td><td>Completes it and stores tokens.</td></tr>
+              <tr><td><code>POST /api/rag/index</code></td><td>Pushes external data into the RAG store — for a pipeline refreshing listings.</td></tr>
+              <tr><td><code>POST /api/admin/sync/events</code></td><td>Manually fires the weekly events job.</td></tr>
+              <tr><td><code>POST /api/admin/sync/listings</code></td><td>Manually fires the monthly listings job.</td></tr>
+              <tr><td><code>GET /</code> · <code>GET /api/health</code></td><td>Health checks.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note why">
+          <span class="tag">Why the sync triggers return immediately</span>
+          <p>
+            Both use <code>run_in_executor(None, …)</code> and return
+            <code>{"status": "started"}</code> straight away. A 25-district sync takes several
+            minutes; running it inline would block the request <em>and</em> the event loop for
+            every other user. Completion is reported to the server logs.
+          </p>
+        </div>
+      </section>
+
+      <!-- ================= FAIL OPEN ================= -->
+      <section id="failopen">
+        <h2><span class="num">11</span>The fail-open contract</h2>
+        <p class="lede">
+          The single design rule that runs through every module: <strong>no external dependency is
+          allowed to raise.</strong> Each one has a defined degraded state.
+        </p>
+
+        <div class="tw">
+          <table>
+            <thead><tr><th>Dependency</th><th>Degraded behaviour</th></tr></thead>
+            <tbody>
+              <tr><td>PostgreSQL <em>(async)</em></td><td><code>get_pool() → None</code>, so <span class="f">db_tool</span> serves mock data</td></tr>
+              <tr><td>PostgreSQL <em>(sync)</em></td><td><code>get_connection() → None</code>; ingestion still runs, persists nothing</td></tr>
+              <tr><td>Redis</td><td>Cache miss on every call</td></tr>
+              <tr><td>Google Calendar</td><td>Empty list of free days</td></tr>
+              <tr><td>OpenWeather</td><td><code>None</code> — the planner proceeds without weather</td></tr>
+              <tr><td>All three disaster sources</td><td><code>{safe: true, note: "unavailable"}</code></td></tr>
+              <tr><td>Nominatim</td><td><code>None</code> — the context node skips enrichment</td></tr>
+              <tr><td>ip-api.com</td><td><code>None</code> → the soft <code>location_unresolved</code> error</td></tr>
+              <tr><td>Booking.com</td><td>No price enrichment; base listings still sync</td></tr>
+              <tr><td>sentence-transformers</td><td>Deterministic hash embeddings, same dimension</td></tr>
+              <tr><td>FAISS</td><td>Pure-Python cosine similarity</td></tr>
+              <tr><td>LLM call or JSON parse</td><td><code>{}</code> → falls back to the pre-LLM candidate lists</td></tr>
+              <tr><td>Token store (database)</td><td>Local JSON file — but only when the DB is <em>absent</em>, never when it says no</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          That contract is what makes the service runnable from a fresh clone with an empty
+          <code>.env</code>, and what keeps the 19 test files in
+          <span class="f">ai-backend/tests/</span> free of network calls.
+        </p>
+      </section>
+
+      <!-- ================= FOUND ================= -->
+      <section id="found">
+        <h2><span class="num">12</span>Two things to fix</h2>
+        <p class="lede">Both surfaced while tracing the paths above.</p>
+
+        <div class="note bug">
+          <span class="tag">Hardcoded event window</span>
+          <p>
+            <span class="f">recommendation_agent.py:53</span> calls
+            <code>db_tool.get_events(destination, "2026-08-20", "2026-08-23")</code> — dates left
+            over from the mock phase, marked as such in the comment beside them.
+          </p>
+          <p>
+            It ignores <code>state.trip_dates</code> entirely, so once real event data lands, every
+            request fetches events for the wrong four days. The fix is to derive the window from
+            <code>trip_dates</code>, falling back to today + <code>duration_days</code> — the same
+            defaulting <code>_context_node</code> already does for weather.
+          </p>
+        </div>
+
+        <div class="note bug">
+          <span class="tag">budget_notes lost on the fallback path</span>
+          <p>
+            <span class="f">planning_agent.py:64</span> writes the LLM's budget explanation into
+            <code>state.final_response</code>, which <code>_respond_node</code> then unconditionally
+            overwrites with its own summary.
+          </p>
+          <p>
+            <code>RecommendationAgent</code> handles this correctly by writing
+            <code>state.budget_notes</code>, which <code>_respond_node</code> appends. The
+            <code>PlanningAgent</code> fallback should do the same — as written, a
+            "no combination fits this budget" warning silently disappears on exactly the path where
+            it's most likely to matter.
+          </p>
+        </div>
+      </section>
+
+      <p class="endnote">
+        Traced across all 39 source modules in <span class="f">ai-backend/</span>. Line references
+        point at the current working tree; nothing in the repository was modified. Design and
+        rationale notes are quoted from the modules' own docstrings and comments where they exist.
+      </p>
+
+    </main>
+  </div>
+</div>

@@ -1,6 +1,6 @@
 # SmartJourney — Master Test Plan
 
-**Status:** Living document. **Last verified against a real run:** 2026-09-26.
+**Status:** Living document. **Last verified against a real run:** 2026-09-27.
 **Format modelled on:** the MPM Solutions "Find Your Job" Master Test Plan (2016), retargeted from a
 single Symfony/PHP/MySQL MVC application to SmartJourney's three-service architecture.
 
@@ -29,18 +29,18 @@ The objectives, adapted from the sample's structure:
   formality — `ai-backend` has no authentication of its own (`allow_origins=["*"]` in `main.py`), so
   **NestJS's Keycloak-backed guards are the only trust boundary in the whole system.**
 - **Find design/implementation problems** that threaten quality — this test plan's own construction
-  found one: `explore.service.ts`'s `searchEvents` silently dropped the `from` date filter whenever both
-  `from` and `to` were supplied (two separate object spreads under the same key, the second clobbering
-  the first). Fixed as part of this work; see §4.1.
-- **Identify risks**, especially around free-tier external APIs the itinerary planner depends on (§6).
+  found several, listed in §4.1. Among them: `explore.service.ts`'s `searchEvents` silently dropped the
+  `from` date filter whenever both `from` and `to` were supplied (fixed), and the orchestrator crashes on
+  a follow-up turn whose planner call fails (open).
+- **Identify risks**, especially around free-tier external APIs the itinerary planner depends on (§5).
 - **Meet quality standards** appropriate to the LLM-driven core: since `ai-backend`'s output is
   non-deterministic, "correct" cannot mean "matches an exact string" — it means schema-valid, budget-
   respecting, and policy-compliant output, with a defined, tested fallback path when the LLM is
   unavailable (`plan_source: "fallback"`).
 - **Meet functional and non-functional requirements**, verified against the golden-scenario suite
-  already maintained for `ai-backend` (§6, §7).
+  already maintained for `ai-backend` (§3.1.7).
 - **Report honestly**: every number in this document (test counts, coverage percentages, pass/fail) was
-  produced by actually running the suite on 2026-09-26, not estimated. Where something could not be run
+  produced by actually running the suite on 2026-09-26 or 2026-09-27, not estimated. Where something could not be run
   (e.g. Playwright's authenticated scenarios — no live Keycloak/Docker stack in this environment), that
   is stated as such rather than assumed passing.
 
@@ -71,7 +71,7 @@ rather than one per route or per component — see §4 for exactly what each one
 | Function Testing | Vitest (`backend`), pytest (`ai-backend`) |
 | UI Testing | React Testing Library (component-level), Playwright (journey-level) |
 | Performance Profiling | Chrome DevTools / Lighthouse (frontend); NestJS request logging (backend) |
-| Load Testing | `autocannon` or k6 against `backend`, informal only — no load-testing infrastructure exists yet (§6) |
+| Load Testing | `autocannon` against `backend` — one manual baseline run on 2026-09-27; not automated (§3.1.5) |
 | Security & Access Control | Ownership-check unit tests (every service method takes `userId` first), the e2e guard-chain tests, manual review of `ai-backend`'s network exposure |
 | Failover & Recovery | `ai-backend/scripts/e2e_check.py --determinism`, `check_llm_chain_reliability.py`; backend's `AiBackendService` 502-mapping tests |
 | Configuration Testing | The three CI workflows below are themselves a configuration test — they prove each service's test suite runs correctly with no Docker services and no secrets |
@@ -94,11 +94,11 @@ rather than one per route or per component — see §4 for exactly what each one
 | | |
 |---|---|
 | **Technique Objective** | Verify each service method's business logic in isolation: status computation, ownership enforcement, idempotency, error mapping. |
-| **Technique** | Vitest for `backend` (69 unit tests across 14 files, verified passing 2026-09-26), pytest for `ai-backend` (544 tests across 42 files, pre-existing and unmodified this round). Both use plain fakes/mocks rather than a real database or LLM. |
+| **Technique** | Vitest for `backend` (69 unit tests across 14 files, verified passing 2026-09-26, re-run 2026-09-27), pytest for `ai-backend` (544 tests across 42 files, pre-existing and unmodified this round, run as `python -m pytest -m "not external" -q`). Both use plain fakes/mocks rather than a real database or LLM. |
 | **Oracles** | Hand-computed expected values in each assertion — e.g. `computeStatus`'s three thresholds (`budget.service.spec.ts`), `tripToItineraryDays`'s UTC time formatting (`trip-mappers.spec.ts`). |
 | **Required Tools** | Vitest 4, pytest 9.1.1, `@vitest/coverage-v8` |
 | **Success Criteria** | 100% of unit tests pass with zero live services or API keys reachable |
-| **Special Considerations** | `ai-backend`'s LLM calls are always faked in unit tests (`tests/conftest.py`); no unit test may make a real network call — verified by running the full backend suite (`npm test`) and the full ai-backend suite (`pytest`) with no Docker containers running, both green |
+| **Special Considerations** | `ai-backend`'s LLM calls are always faked in unit tests (`tests/conftest.py`); no unit test may make a real network call — verified by running the full backend suite (`npm test`) and the full ai-backend suite (`python -m pytest`) with no Docker containers running, both green. The first CI run showed that some of these tests silently relied on API keys from the local `.env` (a key must be present before the mocked call is reached); CI now supplies placeholder keys (§3.1.8). Plain `pytest` cannot import the `app` package, so always run it as `python -m pytest`. |
 
 #### 3.1.3 User Interface Testing
 
@@ -120,17 +120,17 @@ rather than one per route or per component — see §4 for exactly what each one
 | **Oracles** | No formally agreed SLA exists yet — the only enforced number is the 120s NestJS→AI-backend timeout, tested via `ai-backend.service.spec.ts`'s timeout-mapping case. |
 | **Required Tools** | Chrome DevTools, Lighthouse |
 | **Success Criteria** | `/trip-plan` responses complete within the 120s budget or degrade to the deterministic fallback path (§3.1.7), never hang indefinitely |
-| **Special Considerations** | This is the least mature area of the plan — no dashboard, no historical baseline. Flagged as a gap in §6, not glossed over. |
+| **Special Considerations** | This is the least mature area of the plan — no dashboard yet. A first page-load baseline was recorded on 2026-09-27: `/home` made 31 requests (2.8 MB transferred), DOMContentLoaded 211 ms, load 600 ms. That was measured against `next dev`, not a production build, so it is a reference point, not an SLA. Flagged as a gap in §5, not glossed over. |
 
 #### 3.1.5 Load Testing
 
 | | |
 |---|---|
 | **Technique Objective** | Determine behaviour under concurrent users, particularly against the free-tier external APIs `ai-backend` depends on. |
-| **Technique** | Not yet automated. Recommended: `autocannon -c 20 -d 30 http://localhost:3001/explore/listings` style runs against `backend`'s read-heavy, publicly-cacheable routes; `ai-backend`'s own `scripts/check_llm_chain_reliability.py` already exercises the Groq/Gemini failover chain under repeated calls. |
+| **Technique** | Not yet automated. One manual baseline run on 2026-09-27: `npx autocannon -c 20 -d 30 http://localhost:3001/listings` (20 connections for 30 s against the public, read-heavy listings route; the route is `/listings`, not `/explore/listings`, which returns 404). `ai-backend`'s own `scripts/check_llm_chain_reliability.py` already exercises the Groq/Gemini failover chain under repeated calls. |
 | **Oracles** | No formal pass/fail threshold defined yet. |
-| **Required Tools** | `autocannon` or k6 (not yet added to either repo) |
-| **Success Criteria** | To be defined once a baseline run exists |
+| **Required Tools** | `autocannon`, run via `npx` (not a dependency of any repo) |
+| **Success Criteria** | Baseline recorded 2026-09-27: avg 394 req/s, p50 latency 50 ms, p99 68 ms, max 145 ms, ~12k requests in 30 s. Pass/fail thresholds are still to be set against this baseline. |
 | **Special Considerations** | The real bottleneck is almost never `backend` or `ai-backend`'s own compute — it is the external APIs' rate limits (Nominatim 1 req/s, OpenRouteService 500/day, Groq's free-tier TPM ceiling). Load testing this system mostly means load testing against a quota, which argues for mocking those calls in any load test rather than burning real quota. |
 
 #### 3.1.6 Security and Access Control Testing
@@ -142,7 +142,7 @@ rather than one per route or per component — see §4 for exactly what each one
 | **Oracles** | HTTP status codes (401 unauthenticated, 403 wrong role, 404 wrong owner) and the exact Prisma `where` clause used. |
 | **Required Tools** | Vitest, supertest, `jsonwebtoken` (for signing test tokens), manual `curl`/`nmap` check that `ai-backend`'s port 8000 is not exposed outside the Docker network in any deployed environment |
 | **Success Criteria** | 100% of the ownership and RBAC unit/e2e tests pass; `ai-backend` is confirmed unreachable from outside the Docker network in the deployed topology |
-| **Special Considerations** | Unlike the sample MTP (which could say "SQL injection is neglected since Doctrine ORM manages access"), **this project cannot make the equivalent claim about `ai-backend`'s exposure** — it accepts requests from anyone who can reach it, with no token check. The mitigation is entirely at the infrastructure layer (Docker network isolation / firewall), not the application layer, and that mitigation is not covered by any automated test in this plan — it is a manual deployment-configuration check, flagged as a residual risk in §6. |
+| **Special Considerations** | Unlike the sample MTP (which could say "SQL injection is neglected since Doctrine ORM manages access"), **this project cannot make the equivalent claim about `ai-backend`'s exposure** — it accepts requests from anyone who can reach it, with no token check. The mitigation is entirely at the infrastructure layer (Docker network isolation / firewall), not the application layer, and that mitigation is not covered by any automated test in this plan — it is a manual deployment-configuration check, flagged as a residual risk in §5. |
 
 #### 3.1.7 Failover and Recovery Testing
 
@@ -152,25 +152,25 @@ rather than one per route or per component — see §4 for exactly what each one
 | **Technique** | `ai-backend.service.spec.ts` (new, 4 cases) asserts a non-2xx response, a timeout, and a network error from `ai-backend` all map to a 502 in NestJS, never an unhandled exception. At the `ai-backend` layer itself, the pre-existing `test_fallback.py` and the golden-scenario harness (`scripts/e2e_check.py`) cover the LLM-unavailable path, verifying `plan_source: "fallback"` and HTTP 200 rather than an error. |
 | **Oracles** | For LLM-dependent output, the oracle is **never** exact text — it is schema validity (`output_validator.py`), budget compliance, and `plan_source`, since the same prompt can legitimately produce different (still-valid) itineraries on different runs. |
 | **Required Tools** | pytest, `scripts/e2e_check.py --determinism`, `scripts/check_llm_chain_reliability.py` |
-| **Success Criteria** | Golden scenario 11 ("Gemini unavailable") passes with `plan_source: "fallback"` and HTTP 200 (confirmed ✅ PASS, `PROJECT_MASTER_PLAN.md` §6, last live run 2026-09-03) |
-| **Special Considerations** | Two of the twelve golden scenarios carry documented caveats rather than clean passes: #5 (follow-up "make day 2 cheaper") has a data-sparsity caveat, not a bug (see `smartjourney-followup-gap-todo` project memory); #9 hit a transient 429 on first attempt but passed clean on retry. The honest score is **11/12 (91.7%)**, not 12/12 — recorded as such rather than rounded up. |
+| **Success Criteria** | Golden scenario 11 ("Gemini unavailable") passes with `plan_source: "fallback"` and HTTP 200 (confirmed passing again in the 2026-09-27 live run) |
+| **Special Considerations** | The 2026-09-27 live run scored **10/12 (83.3%)**, below the ≥ 11/12 target. It supersedes the 11/12 recorded on 2026-09-03 in `PROJECT_MASTER_PLAN.md` §6. The first attempt that day scored 8/12 because the harness itself was broken (stale mock-patch targets, fixed — §4.1). After the fix, #5 (follow-up "make day 2 cheaper") failed its "day 2 cost strictly lower" check, and #6 (follow-up "I'm starting from Polonnaruwa") raised an unhandled exception. #6 is an open orchestrator defect (§4.1): Gemini 504 timeouts triggered it but did not cause it. Recorded as measured rather than rounded up. |
 
 #### 3.1.8 Configuration Testing
 
 | | |
 |---|---|
 | **Technique Objective** | Verify each service's test suite runs correctly in a clean environment with no locally-installed extras and no secrets. |
-| **Technique** | Three GitHub Actions workflows (`backend/.github/workflows/ci.yml`, `frontend-web/.github/workflows/ci.yml`, `ai-backend/.github/workflows/ci.yml`), each a from-scratch checkout + dependency install + test run, with zero Docker services and zero API keys. |
+| **Technique** | Three GitHub Actions workflows (`backend/.github/workflows/ci.yml`, `frontend-web/.github/workflows/ci.yml`, `ai-backend/.github/workflows/ci.yml`), each a from-scratch checkout + dependency install + test run, with zero Docker services and no real secrets (the ai-backend workflow supplies placeholder `GEMINI_API_KEY`/`GROQ_API_KEY`/`ORS_API_KEY`, since key-gated code runs before the mocked calls). |
 | **Oracles** | CI job exit code. |
-| **Required Tools** | GitHub Actions, Node 22, Python 3.12 |
-| **Success Criteria** | All three workflows pass on a clean checkout — verified locally by reproducing each workflow's exact command sequence (`npm ci && npx prisma generate && npm run lint && npm test && npm run test:e2e`; `npm ci && npm run lint && npm test`; `pip install -r requirements.txt && pytest -m "not external" -q`) before committing the workflow files |
+| **Required Tools** | GitHub Actions, Node 26 (backend), Node 22 (frontend-web), Python 3.12 |
+| **Success Criteria** | All three workflows pass on a clean checkout — green on 2026-09-27. Reproducing the commands locally beforehand was not enough: all three failed on their first push, for configuration reasons only. Fixes: backend moved to Node 26 because Node 22's npm 10 rejected the npm-11 lockfile; ai-backend runs `python -m pytest`, adds `respx`, `itsdangerous` and `pytest-asyncio` to `requirements.txt`, and supplies placeholder API keys; frontend-web's push trigger now covers `new-main` as well as `main`. |
 | **Special Considerations** | Coverage is *reported*, not *gated* — no minimum-coverage threshold is enforced yet, since setting one on a suite this young (backend statement coverage 70.4%, frontend 75.3%) would fail the build for the wrong reason. Playwright is deliberately excluded from CI (§3.1.3). |
 
 ---
 
 ## 4. Deliverables
 
-### 4.1 Test Evaluation Summary (as actually run, 2026-09-26)
+### 4.1 Test Evaluation Summary (as actually run, 2026-09-27)
 
 | Repo | Command | Result |
 |---|---|---|
@@ -178,19 +178,30 @@ rather than one per route or per component — see §4 for exactly what each one
 | `backend` | `npm test` | **69 passed**, 0 failed — 14 spec files |
 | `backend` | `npm run test:cov` | 70.37% statements / 53.35% branches / 62.58% functions / 72.30% lines |
 | `backend` | `npm run test:e2e` | **6 passed**, 0 failed |
+| `backend` | `npx autocannon -c 20 -d 30 http://localhost:3001/listings` | avg 394 req/s, p50 50 ms, p99 68 ms, ~12k requests in 30 s (20 connections, local) |
 | `frontend-web` | `npm run lint` | 0 errors/warnings (`next lint`) |
 | `frontend-web` | `npm test` | **18 passed**, 0 failed — 5 spec files |
-| `frontend-web` | `npm run test:cov` | 75.34% statements / 65.90% branches / 83.33% functions / 76.92% lines (only the two source files actually exercised so far — `middleware.ts`, `auth.ts` — are the ones instrumented; component/store files under `__tests__` did not appear in the v8 text-reporter's per-file table, a known reporter display quirk, not a coverage gap — the aggregate summary numbers include them) |
-| `frontend-web` | `npx playwright test` | **1 passed** (unauthenticated redirect, against live `next dev`), **3 skipped** (need a seeded Keycloak session — see §3.1.3) |
-| `ai-backend` | `pytest -m "not external" -q` | **544 passed**, 0 failed — 42 files (pre-existing suite, unmodified) |
-| `ai-backend` | `scripts/e2e_check.py` | **11/12 (91.7%)** golden scenarios — see §3.1.7; not re-run in this session, cited from `PROJECT_MASTER_PLAN.md` §6's 2026-09-03 record |
+| `frontend-web` | `npm run test:cov` | 75.34% statements / 65.90% branches / 83.33% functions / 76.92% lines (per-file: `middleware.ts`, `SpendByCategoryPanel.tsx`, `trip-mappers.ts`, `trip-store.ts` at 100% statements; `auth.ts` at 61.7%) |
+| `frontend-web` | `npx playwright test` | **1 passed** (unauthenticated redirect, against live `next dev`), **3 skipped** (need a seeded Keycloak session — see §3.1.3) — re-run 2026-09-27 |
+| `ai-backend` | `python -m pytest -m "not external" -q` | **544 passed**, 0 failed — 42 files (pre-existing suite, unmodified) |
+| `ai-backend` | `python scripts/e2e_check.py` | **10/12 (83.3%)** golden scenarios, live run 2026-09-27 — below the ≥ 11/12 target; see §3.1.7 |
 
-**One real defect found and fixed while writing these tests:** `explore.service.ts`'s `searchEvents`
-built its Prisma `where` clause with two separate object spreads both keyed `start_datetime` (one for
-`from`, one for `to`); the second silently overwrote the first, so a request supplying both bounds
-dropped the `from` filter entirely. Caught by `explore.service.spec.ts`'s
-"applies the district and date-window filters together" test, fixed by merging both bounds into a single
-spread, and reverified passing.
+**Real defects found during this test effort (2026-09-26 and 2026-09-27):**
+
+- **`explore.service.ts` `searchEvents` (fixed).** The Prisma `where` clause was built with two separate
+  object spreads both keyed `start_datetime` (one for `from`, one for `to`). The second silently
+  overwrote the first, so a request supplying both bounds dropped the `from` filter. Caught by
+  `explore.service.spec.ts`'s "applies the district and date-window filters together" test, fixed by
+  merging both bounds into a single spread, and reverified passing.
+- **`scripts/e2e_check.py` (fixed).** Scenarios 7–9 patched `app.tools.registry.get_weather` /
+  `get_disaster_info` / `get_free_days`, which an earlier refactor had moved out of the registry, so all
+  three crashed before testing anything. They now patch the functions where they are used
+  (`app.core.context_resolver`).
+- **Orchestrator follow-up crash (open).** On a follow-up turn, when the planner fails (here after
+  Gemini 504 timeouts), `_verify_node` in `app/core/orchestrator.py` still sees the previous turn's
+  itinerary. It skips its "no plan produced" guard and calls `PlannerOutput.model_validate(None)`, which
+  raises. Reproduced by golden scenario #6. The request should degrade to the fallback plan instead.
+- **CI configuration (fixed).** The first-push failures in all three repos, described in §3.1.8.
 
 ### 4.2 Reporting on Test Coverage
 
@@ -204,7 +215,9 @@ test session (UAT, exploratory testing, the Playwright scenarios that need a liv
 
 | Date | Tester | Test case | Executed | Pass | Fail | Pass % | Fail % | Comments |
 |---|---|---|---|---|---|---|---|---|
-| | | | | | | | | |
+| 2026-09-27 | Shaluka | Manual evidence checks: Prisma Studio, DevTools page load, autocannon load run, Keycloak realm roles | 4 | 4 | 0 | 100% | 0% | First page-load and load-test baselines recorded (§3.1.4, §3.1.5) |
+| 2026-09-27 | Shaluka | Golden scenarios: `python scripts/e2e_check.py` against the full local stack | 12 | 10 | 2 | 83.3% | 16.7% | First attempt 8/12 from a harness bug (fixed). #5: day-2 cost not lower. #6: unhandled exception, open defect (§4.1) |
+| 2026-09-27 | Shaluka | CI workflows on first push to GitHub, all 3 repos | 3 | 3 | 0 | 100% | 0% | Green only after configuration fixes; all three failed on their first push (§3.1.8) |
 
 ---
 
@@ -219,7 +232,8 @@ test session (UAT, exploratory testing, the Playwright scenarios that need a liv
 | Keycloak realm-import drift between `realm-export.json` and a running instance | Realm export is checked into `backend/keycloak/realm-export.json` and re-imported on environment setup | Re-export from a known-good instance, diff, re-import |
 | No staging environment | Local Docker Compose stack (`backend/docker-compose.yml`) is the closest equivalent | Manual verification against production-like data before release |
 | LLM output is non-deterministic | Test oracles never assert exact text — only schema validity, budget compliance, and `plan_source` | A borderline case is treated as a data-coverage gap (see golden scenario #5), not chased as a flaky test |
-| No load-testing baseline exists (§3.1.5) | Documented as an open gap rather than an assumed-fine area | First load test run establishes the baseline before any capacity claim is made |
+| Load baseline covers one route only (`/listings`, local, 2026-09-27; §3.1.5) | Documented as a partial baseline, not a capacity claim | Extend the baseline to other routes and a deployed environment before any capacity claim is made |
+| A follow-up turn crashes when the planner fails | Open defect, reproduced by golden scenario #6: `orchestrator.py`'s `_verify_node` validates a missing planner output when an earlier itinerary exists | Guard `_verify_node` on `planner_output` itself, so the request degrades to the fallback plan instead of raising |
 
 **Assumptions:** Docker Desktop and the documented `.env` files are available for anyone running the full
 stack; CI runners have no access to and make no calls to any external paid API; `frontend-mobile`
@@ -236,7 +250,7 @@ remains out of scope until work on it actually begins.
 
 **Internal:**
 - `ai-backend/docs/master_plan/PROJECT_MASTER_PLAN.md` §6 — the 12 golden scenarios and their 2026-09-03
-  results
+  results (superseded by the 2026-09-27 run in §3.1.7)
 - `ai-backend/docs/master_plan/DETERMINISM_AND_VALIDATION.md` — why LLM output isn't asserted verbatim
 - `REPO_STATUS.md` — per-repo state as of 2026-09-23
 - `RUNNING.md` — local stack startup order and required environment variables

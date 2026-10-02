@@ -75,6 +75,7 @@ rather than one per route or per component — see §4 for exactly what each one
 | Security & Access Control | Ownership-check unit tests (every service method takes `userId` first), the e2e guard-chain tests, manual review of `ai-backend`'s network exposure |
 | Failover & Recovery | `ai-backend/scripts/e2e_check.py --determinism`, `check_llm_chain_reliability.py`; backend's `AiBackendService` 502-mapping tests |
 | Configuration Testing | The three CI workflows below are themselves a configuration test — they prove each service's test suite runs correctly with no Docker services and no secrets |
+| Accessibility Testing | axe-core via `@axe-core/playwright` over five rendered pages (WCAG 2.0/2.1 A and AA); Lighthouse for a reportable score (§3.1.9) |
 
 ### 3.1 Technique detail
 
@@ -108,8 +109,8 @@ rather than one per route or per component — see §4 for exactly what each one
 | **Technique** | React Testing Library for component/logic-level tests (5 files, 18 tests: `middleware.ts`'s `authorized` callback, `auth.ts`'s JWT refresh callback, `trip-mappers.ts`, `trip-store.ts`, `SpendByCategoryPanel`). Playwright for journey-level tests against `next dev` plus the full Docker/Keycloak/backend/AI-backend stack (`RUNNING.md`'s startup order). |
 | **Oracles** | Rendered DOM assertions (`@testing-library/jest-dom` matchers) for component tests; URL and visible-element assertions for Playwright. |
 | **Required Tools** | Vitest, React Testing Library, jsdom, Playwright |
-| **Success Criteria** | All RTL tests pass with no backend running at all; Playwright's unauthenticated-redirect scenario passes against a bare `next dev` server |
-| **Special Considerations** | Playwright's three *authenticated* scenarios (home renders chat, a saved trip appears, a non-admin is blocked from `/admin`) need a seeded Keycloak session this repo has no scripted way to obtain headlessly yet — they are written and present in `e2e/journey.spec.ts` but marked `test.skip` with the reason stated inline, rather than either being deleted or left to silently fail. Only the one scenario that needs no auth (`GET /home` while signed out → redirected to `/login`) was verified actually passing, against a real `next dev` instance, on 2026-09-26. |
+| **Success Criteria** | All RTL tests pass with no backend running at all; all five Playwright journeys pass against the full local stack |
+| **Special Considerations** | **Updated 2026-10-02 — all five journeys now run; none are skipped.** Playwright's three *authenticated* scenarios (home renders chat, a saved trip appears, a non-admin is blocked from `/admin`) were previously `test.skip`ped for want of a scripted way to obtain a Keycloak session headlessly. There is one: `e2e/auth.setup.ts` creates the traveler through the realm's admin REST API, then signs in through Keycloak's own login form in a real browser and saves the resulting session for the other journeys. Only the *account* is seeded — the authorization-code round-trip, the next-auth cookie and the NestJS token check are all real, so a green run still proves sign-in works. The same setup seeds one saved trip through `POST /trips` with the session's own access token, rather than inserting a row the API would never produce. Two further corrections made at the same time: the config pointed at `http://localhost:3000`, a port another project on the same machine owns, so with `reuseExistingServer` the whole suite had been running against an unrelated application — the addresses now come from `.env.local`, which must already agree with the redirect URI registered for `smartjourney-web` in the realm. And the unauthenticated assertion was unwinnable as written, because `/login` forwards straight on to Keycloak; it now checks the middleware's 307 `Location` header without following it, then asserts the browser ends at the realm's sign-in form. |
 
 #### 3.1.4 Performance Profiling
 
@@ -166,6 +167,20 @@ rather than one per route or per component — see §4 for exactly what each one
 | **Success Criteria** | All three workflows pass on a clean checkout — green on 2026-09-27. Reproducing the commands locally beforehand was not enough: all three failed on their first push, for configuration reasons only. Fixes: backend moved to Node 26 because Node 22's npm 10 rejected the npm-11 lockfile; ai-backend runs `python -m pytest`, adds `respx`, `itsdangerous` and `pytest-asyncio` to `requirements.txt`, and supplies placeholder API keys; frontend-web's push trigger now covers `new-main` as well as `main`. |
 | **Special Considerations** | Coverage is *reported*, not *gated* — no minimum-coverage threshold is enforced yet, since setting one on a suite this young (backend statement coverage 70.4%, frontend 75.3%) would fail the build for the wrong reason. Playwright is deliberately excluded from CI (§3.1.3). |
 
+#### 3.1.9 Accessibility Testing
+
+*Added 2026-10-02.*
+
+| | |
+|---|---|
+| **Technique Objective** | Verify the web interface meets WCAG 2.0 and 2.1 levels A and AA on the pages a traveler actually uses, including the colour-contrast check the module's brief names explicitly. |
+| **Technique** | `frontend-web/e2e/accessibility.spec.ts` runs **axe-core** (`@axe-core/playwright`) against five *rendered* pages — the landing page signed out, then `/home`, `/explore`, `/saved-itineraries` and `/budget-tracker` signed in with real API data, reusing the session from `e2e/auth.setup.ts`. Each page is scanned only once its real content is on screen, so a loading skeleton cannot pass in place of the page. **Lighthouse** (`npm run audit:a11y`) scores the public landing page separately. |
+| **Oracles** | Zero axe violations carrying the `wcag2a`, `wcag2aa`, `wcag21a` or `wcag21aa` tags. The assertion is made against a one-line-per-violation summary (rule, impact, selector, markup) rather than axe's raw result object, so a failure names the element to fix instead of printing several hundred lines of diff. |
+| **Required Tools** | `@axe-core/playwright` 4.13, Playwright, Lighthouse 12 (run via `npx`, not a dependency — the same convention as `autocannon` in §3.1.5) |
+| **Success Criteria** | `npm run test:a11y` → **5 passed**, 0 violations (2026-10-02). Lighthouse accessibility score on `/`: **100/100**. |
+| **Defects found and fixed on the first run** | Four, all real. **(1) `select-name`, critical** — the trip selector on `/budget-tracker` had no accessible name; a screen reader announced only "combo box". Given an `aria-label`. **(2)–(4) `color-contrast`, serious** — `text-gray-400` (#9ca3af) on white measures **2.53:1** against the 4.5:1 minimum, and was being used as the app's muted-text colour: the sidebar's "No trips yet", the chat empty-state hint, and "Loading…". Fixed at the token rather than at the three reported elements — 47 text occurrences across 21 files moved to `text-gray-500` (4.83:1). Thirteen were deliberately left: twelve style icons or icon-only buttons, which fall under WCAG 1.4.11 at 3:1 and pass, and one is a disabled control, which 1.4.3 exempts. One usage sat on `bg-gray-100`, where `text-gray-500` still falls just short at 4.44:1, and went to `text-gray-600` instead. |
+| **Special Considerations** | **A clean axe run is not a claim of conformance.** Automated tools detect roughly a third to a half of WCAG issues; they cannot judge whether alt text is *meaningful*, whether a focus order makes sense, or whether an error message is understandable. No keyboard-only pass and no screen-reader pass (JAWS is commercial; NVDA is the free equivalent) has been done, and `/admin`, `/settings` and the landing sub-pages are not yet scanned. Those are stated as gaps rather than implied to be covered. Like the rest of the Playwright suite, this needs the full local stack and is excluded from CI. |
+
 ---
 
 ## 4. Deliverables
@@ -185,6 +200,24 @@ rather than one per route or per component — see §4 for exactly what each one
 | `frontend-web` | `npx playwright test` | **1 passed** (unauthenticated redirect, against live `next dev`), **3 skipped** (need a seeded Keycloak session — see §3.1.3) — re-run 2026-09-27 |
 | `ai-backend` | `python -m pytest -m "not external" -q` | **544 passed**, 0 failed — 42 files (pre-existing suite, unmodified) |
 | `ai-backend` | `python scripts/e2e_check.py` | **10/12 (83.3%)** golden scenarios, live run 2026-09-27 — below the ≥ 11/12 target; see §3.1.7 |
+
+**Re-run 2026-10-02.** The table above is kept as the dated record of that round; these are the figures
+as they stand now. The suites have grown since, and the Playwright row changed in kind, not just in
+count (§3.1.3).
+
+| Repo | Command | Result |
+|---|---|---|
+| `backend` | `npm test` | **146 passed**, 0 failed — 18 spec files |
+| `backend` | `npm run test:e2e` | **24 passed**, 0 failed — 3 spec files |
+| `frontend-web` | `npm test` | **18 passed**, 0 failed — 5 spec files |
+| `frontend-web` | `npm run lint` | 0 errors/warnings (`next lint`) |
+| `frontend-web` | `npx playwright test` | **10 passed, 0 skipped** — 5 journeys (the three authenticated ones now sign in for real, §3.1.3) + 5 accessibility scans (§3.1.9) |
+| `frontend-web` | `npm run test:a11y` | **5 passed**, 0 WCAG A/AA violations (4 defects found and fixed first, §3.1.9) |
+| `frontend-web` | `npm run audit:a11y` | Lighthouse accessibility **100/100** on `/` |
+| `ai-backend` | `python -m pytest -m "not external" -q` | **826 collected** |
+
+Non-functional coverage and the module's prescribed tool list are mapped, gaps included, in
+[NFR_AND_TOOL_COVERAGE.md](NFR_AND_TOOL_COVERAGE.md).
 
 **Real defects found during this test effort (2026-09-26 and 2026-09-27):**
 

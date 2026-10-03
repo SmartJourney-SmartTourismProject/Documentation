@@ -10,6 +10,11 @@ The folder tree below is the intended structure. These are the documents that ac
 
 | Document | What it is |
 |---|---|
+| [User Manual/1_User_Manual.md](User%20Manual/1_User_Manual.md) (+ PDF) | **User manual** for travelers |
+| [User Manual/2_Admin_Manual.md](User%20Manual/2_Admin_Manual.md) (+ PDF) | **Administrator manual** |
+| [User Manual/3_Local_Setup_Guide.md](User%20Manual/3_Local_Setup_Guide.md) (+ PDF) | Run, build and test the whole system locally |
+| [User Manual/4_System_Overview_and_Deployment.md](User%20Manual/4_System_Overview_and_Deployment.md) (+ PDF) | Architecture, production deployment (Vercel + AWS EC2), where everything is |
+| `Design/UI_Mockups/` | Figma UI mockups (moved from `frontend-web/figma`) |
 | `SRS_14_...pdf` | Software Requirements Specification |
 | `Design_Document_14_...pdf` | Software Design Document |
 | `Group 08 Project Proposal.pdf` | Project proposal |

@@ -1,0 +1,331 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  button,
+  input,
+  select,
+  textarea {
+    @apply appearance-none bg-transparent border-0 outline-none;
+  }
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  .all-unset {
+    all: unset;
+  }
+}
+
+:root {
+  --fraunces-black-font-family: "Fraunces", Helvetica;
+  --fraunces-black-font-size: 14.399999618530273px;
+  --fraunces-black-font-style: normal;
+  --fraunces-black-font-weight: 900;
+  --fraunces-black-letter-spacing: 0px;
+  --fraunces-black-line-height: normal;
+  --fraunces-bold-font-family: "Fraunces", Helvetica;
+  --fraunces-bold-font-size: 15px;
+  --fraunces-bold-font-style: normal;
+  --fraunces-bold-font-weight: 700;
+  --fraunces-bold-letter-spacing: 0px;
+  --fraunces-bold-line-height: 18.75px;
+  --fraunces-semibold-font-family: "Fraunces", Helvetica;
+  --fraunces-semibold-font-size: 32px;
+  --fraunces-semibold-font-style: normal;
+  --fraunces-semibold-font-weight: 600;
+  --fraunces-semibold-letter-spacing: 0px;
+  --fraunces-semibold-line-height: normal;
+  --inter-bold-font-family: "Inter", Helvetica;
+  --inter-bold-font-size: 20px;
+  --inter-bold-font-style: normal;
+  --inter-bold-font-weight: 700;
+  --inter-bold-letter-spacing: 0px;
+  --inter-bold-line-height: normal;
+  --inter-medium-font-family: "Inter", Helvetica;
+  --inter-medium-font-size: 13px;
+  --inter-medium-font-style: normal;
+  --inter-medium-font-weight: 500;
+  --inter-medium-letter-spacing: 0px;
+  --inter-medium-line-height: normal;
+  --inter-regular-font-family: "Inter", Helvetica;
+  --inter-regular-font-size: 14px;
+  --inter-regular-font-style: normal;
+  --inter-regular-font-weight: 400;
+  --inter-regular-letter-spacing: 0px;
+  --inter-regular-line-height: normal;
+  --inter-regular-lower-font-family: "Inter", Helvetica;
+  --inter-regular-lower-font-size: 10px;
+  --inter-regular-lower-font-style: normal;
+  --inter-regular-lower-font-weight: 400;
+  --inter-regular-lower-letter-spacing: 0px;
+  --inter-regular-lower-line-height: normal;
+  --inter-semi-bold-font-family: "Inter", Helvetica;
+  --inter-semi-bold-font-size: 15px;
+  --inter-semi-bold-font-style: normal;
+  --inter-semi-bold-font-weight: 600;
+  --inter-semi-bold-letter-spacing: 0px;
+  --inter-semi-bold-line-height: normal;
+  --inter-semi-bold-upper-font-family: "Inter", Helvetica;
+  --inter-semi-bold-upper-font-size: 12.5px;
+  --inter-semi-bold-upper-font-style: normal;
+  --inter-semi-bold-upper-font-weight: 600;
+  --inter-semi-bold-upper-letter-spacing: 0.5px;
+  --inter-semi-bold-upper-line-height: normal;
+  --jetbrains-mono-bold-font-family: "JetBrains Mono", Helvetica;
+  --jetbrains-mono-bold-font-size: 9.5px;
+  --jetbrains-mono-bold-font-style: normal;
+  --jetbrains-mono-bold-font-weight: 700;
+  --jetbrains-mono-bold-letter-spacing: 0px;
+  --jetbrains-mono-bold-line-height: normal;
+  --jetbrains-mono-bold-upper-font-family: "JetBrains Mono", Helvetica;
+  --jetbrains-mono-bold-upper-font-size: 10px;
+  --jetbrains-mono-bold-upper-font-style: normal;
+  --jetbrains-mono-bold-upper-font-weight: 700;
+  --jetbrains-mono-bold-upper-letter-spacing: 1px;
+  --jetbrains-mono-bold-upper-line-height: normal;
+  --jetbrains-mono-medium-font-family: "JetBrains Mono", Helvetica;
+  --jetbrains-mono-medium-font-size: 11.5px;
+  --jetbrains-mono-medium-font-style: normal;
+  --jetbrains-mono-medium-font-weight: 500;
+  --jetbrains-mono-medium-letter-spacing: 0px;
+  --jetbrains-mono-medium-line-height: normal;
+  --jetbrains-mono-medium-upper-font-family: "JetBrains Mono", Helvetica;
+  --jetbrains-mono-medium-upper-font-size: 10.5px;
+  --jetbrains-mono-medium-upper-font-style: normal;
+  --jetbrains-mono-medium-upper-font-weight: 500;
+  --jetbrains-mono-medium-upper-letter-spacing: 1px;
+  --jetbrains-mono-medium-upper-line-height: normal;
+  --jetbrains-mono-regular-font-family: "JetBrains Mono", Helvetica;
+  --jetbrains-mono-regular-font-size: 9px;
+  --jetbrains-mono-regular-font-style: normal;
+  --jetbrains-mono-regular-font-weight: 400;
+  --jetbrains-mono-regular-letter-spacing: 0px;
+  --jetbrains-mono-regular-line-height: normal;
+  --jetbrains-mono-regular-upper-font-family: "JetBrains Mono", Helvetica;
+  --jetbrains-mono-regular-upper-font-size: 10px;
+  --jetbrains-mono-regular-upper-font-style: normal;
+  --jetbrains-mono-regular-upper-font-weight: 400;
+  --jetbrains-mono-regular-upper-letter-spacing: 1.5px;
+  --jetbrains-mono-regular-upper-line-height: normal;
+  --korma: rgba(255, 255, 255, 1);
+  --plus-jakarta-sans-bold-font-family: "Plus Jakarta Sans", Helvetica;
+  --plus-jakarta-sans-bold-font-size: 13px;
+  --plus-jakarta-sans-bold-font-style: normal;
+  --plus-jakarta-sans-bold-font-weight: 700;
+  --plus-jakarta-sans-bold-letter-spacing: 0px;
+  --plus-jakarta-sans-bold-line-height: 18.200000762939453px;
+  --plus-jakarta-sans-bold-upper-font-family: "Plus Jakarta Sans", Helvetica;
+  --plus-jakarta-sans-bold-upper-font-size: 11.5px;
+  --plus-jakarta-sans-bold-upper-font-style: normal;
+  --plus-jakarta-sans-bold-upper-font-weight: 700;
+  --plus-jakarta-sans-bold-upper-letter-spacing: 0.46000000834465027px;
+  --plus-jakarta-sans-bold-upper-line-height: normal;
+  --plus-jakarta-sans-extrabold-font-family: "Plus Jakarta Sans", Helvetica;
+  --plus-jakarta-sans-extrabold-font-size: 8px;
+  --plus-jakarta-sans-extrabold-font-style: normal;
+  --plus-jakarta-sans-extrabold-font-weight: 800;
+  --plus-jakarta-sans-extrabold-letter-spacing: 0px;
+  --plus-jakarta-sans-extrabold-line-height: normal;
+  --plus-jakarta-sans-regular-font-family: "Plus Jakarta Sans", Helvetica;
+  --plus-jakarta-sans-regular-font-size: 15px;
+  --plus-jakarta-sans-regular-font-style: normal;
+  --plus-jakarta-sans-regular-font-weight: 400;
+  --plus-jakarta-sans-regular-letter-spacing: 0px;
+  --plus-jakarta-sans-regular-line-height: 24.75px;
+  --plus-jakarta-sans-semibold-font-family: "Plus Jakarta Sans", Helvetica;
+  --plus-jakarta-sans-semibold-font-size: 14.5px;
+  --plus-jakarta-sans-semibold-font-style: normal;
+  --plus-jakarta-sans-semibold-font-weight: 600;
+  --plus-jakarta-sans-semibold-letter-spacing: 0px;
+  --plus-jakarta-sans-semibold-line-height: normal;
+  --poppins-bold-font-family: "Poppins", Helvetica;
+  --poppins-bold-font-size: 15px;
+  --poppins-bold-font-style: normal;
+  --poppins-bold-font-weight: 700;
+  --poppins-bold-letter-spacing: 0px;
+  --poppins-bold-line-height: normal;
+  --semantic-button-font-family: "Plus Jakarta Sans", Helvetica;
+  --semantic-button-font-size: 16px;
+  --semantic-button-font-style: normal;
+  --semantic-button-font-weight: 700;
+  --semantic-button-letter-spacing: 0px;
+  --semantic-button-line-height: normal;
+  --semantic-cell-upper-font-family: "JetBrains Mono", Helvetica;
+  --semantic-cell-upper-font-size: 10px;
+  --semantic-cell-upper-font-style: normal;
+  --semantic-cell-upper-font-weight: 500;
+  --semantic-cell-upper-letter-spacing: 0.800000011920929px;
+  --semantic-cell-upper-line-height: normal;
+  --semantic-data-font-family: "Poppins", Helvetica;
+  --semantic-data-font-size: 13.5px;
+  --semantic-data-font-style: normal;
+  --semantic-data-font-weight: 600;
+  --semantic-data-letter-spacing: 0px;
+  --semantic-data-line-height: normal;
+  --semantic-heading-1-font-family: "Poppins", Helvetica;
+  --semantic-heading-1-font-size: 27px;
+  --semantic-heading-1-font-style: normal;
+  --semantic-heading-1-font-weight: 700;
+  --semantic-heading-1-letter-spacing: 0px;
+  --semantic-heading-1-line-height: normal;
+  --semantic-heading-2-font-family: "Poppins", Helvetica;
+  --semantic-heading-2-font-size: 16px;
+  --semantic-heading-2-font-style: normal;
+  --semantic-heading-2-font-weight: 700;
+  --semantic-heading-2-letter-spacing: 0px;
+  --semantic-heading-2-line-height: normal;
+  --semantic-heading-3-font-family: "Inter", Helvetica;
+  --semantic-heading-3-font-size: 16px;
+  --semantic-heading-3-font-style: normal;
+  --semantic-heading-3-font-weight: 600;
+  --semantic-heading-3-letter-spacing: 0px;
+  --semantic-heading-3-line-height: 20.799999237060547px;
+  --semantic-input-font-family: "Plus Jakarta Sans", Helvetica;
+  --semantic-input-font-size: 13.5px;
+  --semantic-input-font-style: normal;
+  --semantic-input-font-weight: 400;
+  --semantic-input-letter-spacing: 0px;
+  --semantic-input-line-height: normal;
+  --semantic-item-font-family: "Plus Jakarta Sans", Helvetica;
+  --semantic-item-font-size: 12.800000190734863px;
+  --semantic-item-font-style: normal;
+  --semantic-item-font-weight: 500;
+  --semantic-item-letter-spacing: 0px;
+  --semantic-item-line-height: normal;
+  --semantic-link-font-family: "Poppins", Helvetica;
+  --semantic-link-font-size: 14.5px;
+  --semantic-link-font-style: normal;
+  --semantic-link-font-weight: 600;
+  --semantic-link-letter-spacing: 0px;
+  --semantic-link-line-height: normal;
+  --semantic-options-font-family: "Inter", Helvetica;
+  --semantic-options-font-size: 13.5px;
+  --semantic-options-font-style: normal;
+  --semantic-options-font-weight: 500;
+  --semantic-options-letter-spacing: 0px;
+  --semantic-options-line-height: 16px;
+  --semantic-strong-font-family: "Plus Jakarta Sans", Helvetica;
+  --semantic-strong-font-size: 13.5px;
+  --semantic-strong-font-style: normal;
+  --semantic-strong-font-weight: 700;
+  --semantic-strong-letter-spacing: 0px;
+  --semantic-strong-line-height: normal;
+  --semantic-textarea-font-family: "Plus Jakarta Sans", Helvetica;
+  --semantic-textarea-font-size: 14.5px;
+  --semantic-textarea-font-style: normal;
+  --semantic-textarea-font-weight: 400;
+  --semantic-textarea-letter-spacing: 0px;
+  --semantic-textarea-line-height: 21.75px;
+}
+
+:root {
+  --animate-spin: spin 1s linear infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 1s var(--animation-delay, 0s) ease forwards;
+}
+
+.animate-fade-up {
+  animation: fade-up 1s var(--animation-delay, 0s) ease forwards;
+}
+
+.animate-marquee {
+  animation: marquee var(--duration) infinite linear;
+}
+
+.animate-marquee-vertical {
+  animation: marquee-vertical var(--duration) linear infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 8s infinite;
+}
+
+.animate-spin {
+  animation: var(--animate-spin);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes image-glow {
+  0% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.74, 0.25, 0.76, 1);
+  }
+
+  10% {
+    opacity: 0.7;
+    animation-timing-function: cubic-bezier(0.12, 0.01, 0.08, 0.99);
+  }
+
+  to {
+    opacity: 0.4;
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  0%,
+  90%,
+  to {
+    background-position: calc(-100% - var(--shimmer-width)) 0;
+  }
+
+  30%,
+  60% {
+    background-position: calc(100% + var(--shimmer-width)) 0;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translate(0);
+  }
+
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+
+@keyframes marquee-vertical {
+  0% {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+  }
+}
